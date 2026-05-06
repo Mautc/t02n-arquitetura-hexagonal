@@ -1,7 +1,7 @@
-package com.fag.lucasmartins.arquitetura_software.infrastructure.adapters.in.messaging.entradaestoque.mapper;
+package com.fag.lucasmartins.arquitetura_software.infrastructure.adapters.in.messaging.pedido.mapper;
 
 import com.fag.lucasmartins.arquitetura_software.core.domain.bo.ProdutoBO;
-import com.fag.lucasmartins.arquitetura_software.infrastructure.adapters.in.messaging.entradaestoque.dto.SQSPedidoProdutoDTO;
+import com.fag.lucasmartins.arquitetura_software.infrastructure.adapters.in.messaging.pedido.dto.SQSPedidoProdutoDTO;
 
 public class SQSProdutoMessagingDTOMapper {
 

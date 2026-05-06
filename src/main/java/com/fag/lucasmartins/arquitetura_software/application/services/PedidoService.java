@@ -1,6 +1,7 @@
 package com.fag.lucasmartins.arquitetura_software.application.services;
 
 import com.fag.lucasmartins.arquitetura_software.application.ports.in.service.PedidoServicePort;
+import com.fag.lucasmartins.arquitetura_software.application.ports.out.messaging.EstoqueEventPublisherPort;
 import com.fag.lucasmartins.arquitetura_software.application.ports.out.persistence.PedidoRepositoryPort;
 import com.fag.lucasmartins.arquitetura_software.application.ports.out.persistence.PessoaRepositoryPort;
 import com.fag.lucasmartins.arquitetura_software.application.ports.out.persistence.ProdutoRepositoryPort;
@@ -8,6 +9,7 @@ import com.fag.lucasmartins.arquitetura_software.core.domain.bo.PedidoBO;
 import com.fag.lucasmartins.arquitetura_software.core.domain.bo.PedidoProdutoBO;
 import com.fag.lucasmartins.arquitetura_software.core.domain.bo.PessoaBO;
 import com.fag.lucasmartins.arquitetura_software.core.domain.bo.ProdutoBO;
+import com.fag.lucasmartins.arquitetura_software.core.domain.event.SaidaEstoqueEvent;
 import com.fag.lucasmartins.arquitetura_software.core.domain.exceptions.DomainException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,10 +27,16 @@ public class PedidoService implements PedidoServicePort {
 
     private final ProdutoRepositoryPort produtoRepositoryPort;
 
-    public PedidoService(PedidoRepositoryPort pedidoRepositoryPort, PessoaRepositoryPort pessoaRepositoryPort, ProdutoRepositoryPort produtoRepositoryPort) {
+    private final EstoqueEventPublisherPort estoqueEventPublisherPort;
+
+    public PedidoService(PedidoRepositoryPort pedidoRepositoryPort,
+                         PessoaRepositoryPort pessoaRepositoryPort,
+                         ProdutoRepositoryPort produtoRepositoryPort,
+                         EstoqueEventPublisherPort estoqueEventPublisherPort) {
         this.pedidoRepositoryPort = pedidoRepositoryPort;
         this.pessoaRepositoryPort = pessoaRepositoryPort;
         this.produtoRepositoryPort = produtoRepositoryPort;
+        this.estoqueEventPublisherPort = estoqueEventPublisherPort;
     }
 
     @Override
@@ -44,7 +52,21 @@ public class PedidoService implements PedidoServicePort {
         pedidoBO.validarCep();
         pedidoBO.calcularValorTotal();
 
-        return pedidoRepositoryPort.salvar(pedidoBO);
+        final PedidoBO pedidoSalvo = pedidoRepositoryPort.salvar(pedidoBO);
+
+        publicarEventosDeSaidaEstoque(pedidoSalvo);
+
+        return pedidoSalvo;
+    }
+
+    private void publicarEventosDeSaidaEstoque(PedidoBO pedidoBO) {
+        for (PedidoProdutoBO item : pedidoBO.getItens()) {
+            final SaidaEstoqueEvent evento = new SaidaEstoqueEvent(
+                    item.getProduto().getId(),
+                    item.getQuantidade()
+            );
+            estoqueEventPublisherPort.publicarSaidaEstoque(evento);
+        }
     }
 
     private void verificarProdutos(PedidoBO pedidoBO) {

@@ -1,4 +1,4 @@
-package com.fag.lucasmartins.arquitetura_software.infrastructure.adapters.in.messaging.entradaestoque.dto;
+package com.fag.lucasmartins.arquitetura_software.infrastructure.adapters.in.messaging.pedido.dto;
 
 public class SQSPedidoProdutoDTO {
 
