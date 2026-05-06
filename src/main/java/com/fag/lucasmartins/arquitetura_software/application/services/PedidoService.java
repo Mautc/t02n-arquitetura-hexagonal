@@ -11,6 +11,8 @@ import com.fag.lucasmartins.arquitetura_software.core.domain.bo.PessoaBO;
 import com.fag.lucasmartins.arquitetura_software.core.domain.bo.ProdutoBO;
 import com.fag.lucasmartins.arquitetura_software.core.domain.event.SaidaEstoqueEvent;
 import com.fag.lucasmartins.arquitetura_software.core.domain.exceptions.DomainException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class PedidoService implements PedidoServicePort {
+
+    private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
 
     private final PedidoRepositoryPort pedidoRepositoryPort;
 
@@ -65,7 +69,14 @@ public class PedidoService implements PedidoServicePort {
                     item.getProduto().getId(),
                     item.getQuantidade()
             );
-            estoqueEventPublisherPort.publicarSaidaEstoque(evento);
+            try {
+                estoqueEventPublisherPort.publicarSaidaEstoque(evento);
+            } catch (Exception e) {
+                // Não derruba a transação do pedido se o publish falhar.
+                // Em produção isso iria pra um outbox / retry; aqui só logamos.
+                log.warn("Falha ao publicar evento de saida de estoque do produto {} - pedido segue salvo",
+                        item.getProduto().getId(), e);
+            }
         }
     }
 
